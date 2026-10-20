@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insect Inspector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #ecfdf5; }
+        /* Removed transform: scaleX(-1) to fix mirror effect */
+        #frame-canvas { display: none; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 font-sans text-emerald-900">
+
+    <div class="w-full max-w-sm flex flex-col items-center">
+        <h1 class="text-3xl font-bold mb-6 tracking-tight text-emerald-800">Insect Inspector</h1>
+
+        <!-- Camera Viewfinder -->
+        <div class="relative w-full aspect-square bg-emerald-100 rounded-3xl overflow-hidden mb-6 shadow-xl border-4 border-white">
+            <video id="viewfinder" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="frame-canvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
+            
+            <!-- Result Overlay -->
+            <div id="result" class="absolute inset-0 flex flex-col items-center justify-center bg-emerald-50/90 backdrop-blur-sm hidden p-6 text-center">
+                <p id="bug-name" class="text-6xl font-black text-emerald-600 mb-3"></p>
+                <p id="bug-profile" class="text-emerald-900 italic text-lg leading-snug"></p>
+            </div>
+
+            <div id="scan-overlay" class="absolute inset-0 bg-emerald-300/40 hidden animate-pulse"></div>
+        </div>
+
+        <!-- Action Button -->
+        <button id="identify-btn" class="w-full py-5 bg-emerald-400 hover:bg-emerald-300 text-white font-black text-xl rounded-2xl shadow-lg transition-all active:scale-95 border-b-4 border-emerald-600">
+            Identify
+        </button>
+    </div>
+
+    <script>
+        const video = document.getElementById('viewfinder');
+        const canvas = document.getElementById('frame-canvas');
+        const btn = document.getElementById('identify-btn');
+        const resultDiv = document.getElementById('result');
+        const nameDisplay = document.getElementById('bug-name');
+        const profileDisplay = document.getElementById('bug-profile');
+        const scanOverlay = document.getElementById('scan-overlay');
+        
+        const database = [
+            { name: "Dave", profile: "Usually found near crumbs. Has strong opinions on local weather." },
+            { name: "Susan", profile: "Currently on a sabbatical from the hive. Loves jazz." },
+            { name: "Kevin", profile: "Just here to cause minor inconvenience. A total rascal." },
+            { name: "Brenda", profile: "Very fast. Probably running late for a very important meeting." },
+            { name: "Gary", profile: "A bit socially awkward, but means well." },
+            { name: "Sheila", profile: "Professional leaf muncher with a flair for the dramatic." },
+            { name: "Barry", profile: "Thinks he's a bumblebee. Don't tell him the truth." },
+            { name: "Linda", profile: "Aspiring influencer. Always posing for photos." },
+            { name: "Steve", profile: "Just Steve. Does his own thing." },
+            { name: "Janet", profile: "Claims to be royalty. Probably just a regular bug." }
+        ];
+
+        let availableBugs = [...database];
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Camera access denied", err);
+            }
+        }
+
+        btn.addEventListener('click', () => {
+            if (!resultDiv.classList.contains('hidden')) {
+                resultDiv.classList.add('hidden');
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+                btn.textContent = "Identify";
+                return;
+            }
+            
+            // Freeze frame without horizontal flip
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            
+            scanOverlay.classList.remove('hidden');
+            btn.disabled = true;
+            btn.textContent = "Analysing...";
+
+            setTimeout(() => {
+                if (availableBugs.length === 0) availableBugs = [...database];
+                const bug = availableBugs.splice(Math.floor(Math.random() * availableBugs.length), 1)[0];
+
+                nameDisplay.textContent = bug.name;
+                profileDisplay.textContent = bug.profile;
+                
+                scanOverlay.classList.add('hidden');
+                resultDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = "Start Again";
+            }, 2000);
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
